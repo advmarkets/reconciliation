@@ -1,0 +1,1652 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Reconciliation Tool</title>
+		<style>
+			th,td,table {
+					border: 1px solid white;
+					background-color:#96D4D4;
+			}
+		
+		</style>
+	</head>
+	<body style="padding:20px">
+		<div id=mtSelection>
+			Which  MetaTrader server would you like to reconcile? <br><br>
+			<input type="checkBox" id="mtSelectionCheckBox" name="mtSelectionCheckBox" value="MT4 Tokyo">
+			<label for="mtSelectionCheckBox">MT4 Tokyo</label><br> 
+			<input type="checkBox" id="mtSelectionCheckBox2" name="mtSelectionCheckBox" value="MT4 London">
+			<label for="mtSelectionCheckBox2">MT4 London</label><br>
+			<input type="checkBox" id="mtSelectionCheckBox3" name="mtSelectionCheckBox" value="MT5">
+			<label for="mtSelectionCheckBox3">MT5</label><br><br>
+			<button id="mtSelectionButton" disabled>Next</button>
+		</div>
+		
+		
+		<div id="AccountsAll" style="display:none">
+			<div id="AccountsTokyo" style="width:850px;height:500px">
+				<label id="AccountsTokyoLabel" for="AccountsTokyoTextArea"><b>Tokyo MT4 Accounts:</b>Please copy paste Accounts from MT4 here with column order Login-Name-Group...</label><br>
+				<textarea style="width:800px;height:85%" id="AccountsTokyoTextArea"></textarea>
+			</div>
+			
+			<div id="AccountsLondon" style="width:850px;height:500px">
+				<label id="AccountsLondonLabel" for="AccountsLondonTextArea"><b>London MT4 Accounts:</b>Please copy paste Accounts from MT4 here with column order Login-Name-Group...</label><br>
+				<textarea style="width:800px;height:85%" id="AccountsLondonTextArea"></textarea>
+			</div>
+			
+			<div id="TradingAccounts" style="width:850px;height:500px">
+				<label id="MT5TradingAccountsLabel" for="TradingAccountsTextArea"><b>MT5 Trading Accounts:</b>Please copy paste Trading Accounts from MT5 here with column order Login-Name-Group... </label><br>
+				<textarea style="width:800px;height:85%" id="TradingAccountsTextArea"></textarea>
+			</div>
+			<button id="AccountsAllInputButton" disabled>Next</button>
+		</div>
+		
+		
+		<div id="PositionsAll" style="display:none">
+			<div id="TokyoOrders" style="850px;height:500px">
+				<label id="TokyoOrdersLabel" for="TokyoOrdersTextArea"><b>Tokyo MT4 Orders:</b>Please copy paste Orders from MT4 here with column order Deal-Login-Time-Type-Symbols-Volume...</label><br> 
+				<textarea style="width:800px;height:85%" id="TokyoOrdersTextArea"></textarea>
+			</div>
+			<div id="LondonOrders" style="850px;height:500px">
+				<label id="LondonOrdersLabel" for="LondonOrdersTextArea"><b>London MT4 Orders:</b>Please copy paste Orders from MT4 here with column order Deal-Login-Time-Type-Symbols-Volume...</label><br>
+				<textarea style="width:800px;height:85%" id="LondonOrdersTextArea"></textarea>
+			</div> 
+			<div id="Positions" style="width:850px;height:500px">
+				<label id="MT5PositionsLabel" for="PositionsTextArea"><b>MT5 Positions:</b>Please copy paste Positions from MT5 here with column order Login-Position-Symbol-Type-Volume...</label> <br>
+				<textarea style="width:800px;height:85%" id="PositionsTextArea"></textarea>
+			</div>
+			<button id="PositionsAllInputButton" disabled>Next</button>			
+		</div>
+		
+		
+		
+		<div id="FortexPortfolio" style="display:none;margin-top:20px">
+			<input type="file" id="AM2PortfolioInput" name="mapping" accept=".txt"> <br><br>
+			<span id="PortfolioSpan" style="display:block">Please input AM2 Portfolio by exporting from GUI while in normal view</span> <br><br><br><br><br>
+			<input type="file" id="AMUKPortfolioInput" name="mapping" accept=".txt"> <br><br>
+			<span id="PortfolioSpan2" style="display:block">Please input AMUK Portfolio by exporting from GUI while in normal view</span> <br><br><br>
+			<br><button id="FortexPortfolioButton" disabled>Next</button><br><br>
+		</div>
+		
+		<div id="accountMatch" style="display:none;margin-top:20px">
+			<input type="file" id="mappingInput" name="mapping" accept=".csv"><br><br>
+			
+			<span id="accountMatchSpan" style="display:block">Please choose updated group mapping csv file.</span>
+			<br><button id="ProcessButton" disabled>Process</button><br><br>
+		</div>
+		
+		<div id="finalDiv" style="display:none;margin-top:20px">
+			<table id="finalTable" style="border:1px solid white;backgroundColor:#96D4D4">
+				<tr>
+					<th>Account</th><th>Mismatch</th>
+				</tr>
+			</table>
+		</div>
+		
+		
+		
+		
+		<script>
+			let mtSelectionCheckBoxes = document.getElementsByName("mtSelectionCheckBox")
+			let mtSelectionButton = document.getElementById("mtSelectionButton");
+			let AccountsTokyoTextArea = document.getElementById("AccountsTokyoTextArea");
+			let AccountsLondonTextArea = document.getElementById("AccountsLondonTextArea");
+			let TradingAccountsTextArea = document.getElementById("TradingAccountsTextArea");
+			let AccountsAllInputButton = document.getElementById("AccountsAllInputButton");
+			let PositionsTextArea = document.getElementById("PositionsTextArea");
+			let OrdersTextArea = document.getElementById("OrdersTextArea");
+			let PositionsAllInputButton = document.getElementById("PositionsAllInputButton");
+			
+			mtSelectionCheckBoxes[0].onchange = function(){
+				if(mtSelectionCheckBoxes[0].checked===true||mtSelectionCheckBoxes[1].checked===true||mtSelectionCheckBoxes[2].checked===true){
+				document.getElementById("mtSelectionButton").disabled = false} else
+				if(mtSelectionCheckBoxes[0].checked===false&&mtSelectionCheckBoxes[1].checked===false&&mtSelectionCheckBoxes[2].checked===false){
+				document.getElementById("mtSelectionButton").disabled = true}
+				};
+			
+			mtSelectionCheckBoxes[1].onchange = function(){
+				if(mtSelectionCheckBoxes[0].checked===true||mtSelectionCheckBoxes[1].checked===true||mtSelectionCheckBoxes[2].checked===true){
+				document.getElementById("mtSelectionButton").disabled = false} else
+				if(mtSelectionCheckBoxes[0].checked===false&&mtSelectionCheckBoxes[1].checked===false&&mtSelectionCheckBoxes[2].checked===false){
+				document.getElementById("mtSelectionButton").disabled = true}
+				};
+			
+			mtSelectionCheckBoxes[2].onchange = function(){
+				if(mtSelectionCheckBoxes[0].checked===true||mtSelectionCheckBoxes[1].checked===true||mtSelectionCheckBoxes[2].checked===true){
+				document.getElementById("mtSelectionButton").disabled = false} else
+				if(mtSelectionCheckBoxes[0].checked===false&&mtSelectionCheckBoxes[1].checked===false&&mtSelectionCheckBoxes[2].checked===false){
+				document.getElementById("mtSelectionButton").disabled = true}
+				};
+			
+			mtSelectionButton.onclick = function(){
+				document.getElementById("mtSelection").style.display = "none";
+				document.getElementById("AccountsAll").style.display = "inline-block";
+				if(mtSelectionCheckBoxes[0].checked === false) 
+					{document.getElementById("AccountsTokyo").style.display = "none"} 
+				if (mtSelectionCheckBoxes[1].checked === false)
+					{document.getElementById("AccountsLondon").style.display = "none"}
+				if (mtSelectionCheckBoxes[2].checked === false)
+					{document.getElementById("TradingAccounts").style.display = "none"};
+			};
+			
+			AccountsTokyoTextArea.oninput = function(){
+				if(mtSelectionCheckBoxes[1].checked === true&&mtSelectionCheckBoxes[2].checked === false){
+					AccountsLondonTextArea.oninput = function(){
+						document.getElementById("AccountsAllInputButton").disabled = false
+						}
+					} else if (mtSelectionCheckBoxes[1].checked === false&&mtSelectionCheckBoxes[2].checked === true){
+					TradingAccountsTextArea.oninput = function(){
+						document.getElementById("AccountsAllInputButton").disabled = false
+						}
+					} else if(mtSelectionCheckBoxes[1].checked === true&&mtSelectionCheckBoxes[2].checked === true){
+						AccountsLondonTextArea.oninput = function(){
+							TradingAccountsTextArea.oninput = function(){document.getElementById("AccountsAllInputButton").disabled = false}
+						}
+						TradingAccountsTextArea.oninput = function(){
+							AccountsLondonTextArea.oninput = function(){document.getElementById("AccountsAllInputButton").disabled = false}
+						}
+					} else {
+						document.getElementById("AccountsAllInputButton").disabled = false
+					}
+				};
+				
+				
+			AccountsLondonTextArea.oninput = function(){
+				if(mtSelectionCheckBoxes[0].checked === true&&mtSelectionCheckBoxes[2].checked === false){
+					AccountsTokyoTextArea.oninput = function(){
+						document.getElementById("AccountsAllInputButton").disabled = false
+						}
+					} else if (mtSelectionCheckBoxes[0].checked === false&&mtSelectionCheckBoxes[2].checked === true){
+					TradingAccountsTextArea.oninput = function(){
+						document.getElementById("AccountsAllInputButton").disabled = false
+						}
+					} else if(mtSelectionCheckBoxes[0].checked === true&&mtSelectionCheckBoxes[2].checked === true){
+						AccountsTokyoTextArea.oninput = function(){
+							TradingAccountsTextArea.oninput = function(){document.getElementById("AccountsAllInputButton").disabled = false}
+						}
+						TradingAccountsTextArea.oninput = function(){
+							AccountsTokyoTextArea.oninput = function(){document.getElementById("AccountsAllInputButton").disabled = false}
+						}
+					} else {
+						document.getElementById("AccountsAllInputButton").disabled = false
+					}
+				};
+				
+			TradingAccountsTextArea.oninput = function(){
+				if(mtSelectionCheckBoxes[0].checked === true&&mtSelectionCheckBoxes[1].checked === false){
+					AccountsTokyoTextArea.oninput = function(){
+						document.getElementById("AccountsAllInputButton").disabled = false
+						}
+					} else if (mtSelectionCheckBoxes[0].checked === false&&mtSelectionCheckBoxes[1].checked === true){
+					AccountsLondonTextArea.oninput = function(){
+						document.getElementById("AccountsAllInputButton").disabled = false
+						}
+					} else if(mtSelectionCheckBoxes[0].checked === true&&mtSelectionCheckBoxes[1].checked === true){
+						AccountsTokyoTextArea.oninput = function(){
+							AccountsLondonTextArea.oninput = function(){document.getElementById("AccountsAllInputButton").disabled = false}
+						}
+						AccountsLondonTextArea.oninput = function(){
+							AccountsTokyoTextArea.oninput = function(){document.getElementById("AccountsAllInputButton").disabled = false}
+						}
+					} else {
+						document.getElementById("AccountsAllInputButton").disabled = false
+					}
+				};
+				
+			
+			
+			
+			AccountsAllInputButton.onclick = function(){
+				document.getElementById("AccountsAll").style.display = "none";
+				document.getElementById("PositionsAll").style.display = "inline-block";
+				if(mtSelectionCheckBoxes[0].checked === false) 
+					{document.getElementById("TokyoOrders").style.display = "none"} 
+				if (mtSelectionCheckBoxes[1].checked === false)
+					{document.getElementById("LondonOrders").style.display = "none"}
+				if (mtSelectionCheckBoxes[2].checked === false)
+					{document.getElementById("Positions").style.display = "none"};
+			}
+			
+			
+			
+			TokyoOrdersTextArea.oninput = function(){
+				if(mtSelectionCheckBoxes[1].checked === true&&mtSelectionCheckBoxes[2].checked === false){
+					LondonOrdersTextArea.oninput = function(){
+						document.getElementById("PositionsAllInputButton").disabled = false
+						}
+					} else if (mtSelectionCheckBoxes[1].checked === false&&mtSelectionCheckBoxes[2].checked === true){
+					PositionsTextArea.oninput = function(){
+						document.getElementById("PositionsAllInputButton").disabled = false
+						}
+					} else if(mtSelectionCheckBoxes[1].checked === true&&mtSelectionCheckBoxes[2].checked === true){
+						LondonOrdersTextArea.oninput = function(){
+							PositionsTextArea.oninput = function(){document.getElementById("PositionsAllInputButton").disabled = false}
+						}
+						PositionsTextArea.oninput = function(){
+							LondonOrdersTextArea.oninput = function(){document.getElementById("PositionsAllInputButton").disabled = false}
+						}
+					} else {
+						document.getElementById("PositionsAllInputButton").disabled = false
+					}
+				};
+				
+				
+			LondonOrdersTextArea.oninput = function(){
+				if(mtSelectionCheckBoxes[0].checked === true&&mtSelectionCheckBoxes[2].checked === false){
+					TokyoOrdersTextArea.oninput = function(){
+						document.getElementById("PositionsAllInputButton").disabled = false
+						}
+					} else if (mtSelectionCheckBoxes[0].checked === false&&mtSelectionCheckBoxes[2].checked === true){
+					PositionsTextArea.oninput = function(){
+						document.getElementById("PositionsAllInputButton").disabled = false
+						}
+					} else if(mtSelectionCheckBoxes[0].checked === true&&mtSelectionCheckBoxes[2].checked === true){
+						TokyoOrdersTextArea.oninput = function(){
+							PositionsTextArea.oninput = function(){document.getElementById("PositionsAllInputButton").disabled = false}
+						}
+						PositionsTextArea.oninput = function(){
+							TokyoOrdersTextArea.oninput = function(){document.getElementById("PositionsAllInputButton").disabled = false}
+						}
+					} else {
+						document.getElementById("PositionsAllInputButton").disabled = false
+					}
+				};
+				
+			PositionsTextArea.oninput = function(){
+				if(mtSelectionCheckBoxes[0].checked === true&&mtSelectionCheckBoxes[1].checked === false){
+					TokyoOrdersTextArea.oninput = function(){
+						document.getElementById("PositionsAllInputButton").disabled = false
+						}
+					} else if (mtSelectionCheckBoxes[0].checked === false&&mtSelectionCheckBoxes[1].checked === true){
+					LondonOrdersTextArea.oninput = function(){
+						document.getElementById("PositionsAllInputButton").disabled = false
+						}
+					} else if(mtSelectionCheckBoxes[0].checked === true&&mtSelectionCheckBoxes[1].checked === true){
+						TokyoOrdersTextArea.oninput = function(){
+							LondonOrdersTextArea.oninput = function(){document.getElementById("PositionsAllInputButton").disabled = false}
+						}
+						LondonOrdersTextArea.oninput = function(){
+							TokyoOrdersTextArea.oninput = function(){document.getElementById("PositionsAllInputButton").disabled = false}
+						}
+					} else {
+						document.getElementById("PositionsAllInputButton").disabled = false
+					}
+				};
+			
+			PositionsAllInputButton.onclick = function(){
+				document.getElementById("PositionsAll").style.display = "none";
+				document.getElementById("FortexPortfolio").style.display = "inline-block";
+			}
+			
+			
+			
+			
+		
+			let mappingInput = document.getElementById("mappingInput");
+			
+			mappingInput.onchange = function(){
+					let existingMappingTable = document.getElementById("accountMatch").querySelector("table")
+					if(existingMappingTable!==null){document.getElementById("accountMatch").removeChild(existingMappingTable)}
+					
+					if(mappingInput.value === ""){
+						document.getElementById("ProcessButton").disabled = true;
+						document.getElementById("accountMatchSpan").style.display = "block";} else {
+						
+						
+						document.getElementById("accountMatchSpan").style.display = "none";
+						
+					
+					
+					
+						const reader = new FileReader();
+						reader.readAsText(mappingInput.files[0]);
+					
+						reader.onload = function(){
+					
+						let decodedArray = reader.result.split(/\r?\n/)
+						decodedArray.pop();
+				
+					
+					
+						let mappingArray = decodedArray.map(x => x.split("\t"))
+						
+					
+						const mappingTable = document.createElement("table")
+						document.getElementById("accountMatch").appendChild(mappingTable)
+						mappingTable.style.border = "1px solid white"
+						mappingTable.style.display = "inline-block"
+						
+						
+						const th1 = document.createElement("th")
+						const th2 = document.createElement("th")
+						const th3 = document.createElement("th")
+						const th4 = document.createElement("th")
+						
+						th1.style.border = "1px solid white"
+						th2.style.border = "1px solid white"
+						th3.style.border = "1px solid white"
+						th4.style.border = "1px solid white"
+						th1.style.borderCollapse = "collapse"
+						th2.style.borderCollapse = "collapse"
+						th3.style.borderCollapse = "collapse"
+						th4.style.borderCollapse = "collapse"
+						th1.style.backgroundColor = "#96D4D4"
+						th2.style.backgroundColor = "#96D4D4"
+						th3.style.backgroundColor = "#96D4D4"
+						th4.style.backgroundColor = "#96D4D4"
+						
+						th1.innerHTML = "MT Server"
+						th2.innerHTML = "Group Name"
+						th3.innerHTML = "Fortex Server"
+						th4.innerHTML = "Fortex Account"
+						mappingTable.appendChild(th1)
+						mappingTable.appendChild(th2)
+						mappingTable.appendChild(th3)
+						mappingTable.appendChild(th4)
+						for(let i=0;i<mappingArray.length;i++){
+							let tr = document.createElement("tr");
+							mappingTable.appendChild(tr)
+							let td1 = document.createElement("td")
+							td1.innerHTML = mappingArray[i][0]
+							let td2 = document.createElement("td")
+							td2.innerHTML = mappingArray[i][1]
+							let td3 = document.createElement("td")
+							td3.innerHTML = mappingArray[i][2]
+							let td4 = document.createElement("td")
+							td4.innerHTML = mappingArray[i][3]
+							tr.appendChild(td1)
+							tr.appendChild(td2)
+							tr.appendChild(td3)
+							tr.appendChild(td4)
+							
+							td1.style.border = "1px solid white"
+							td2.style.border = "1px solid white"
+							td3.style.border = "1px solid white"
+							td4.style.border = "1px solid white"
+							td1.style.borderCollapse = "collapse"
+							td2.style.borderCollapse = "collapse"
+							td3.style.borderCollapse = "collapse"
+							td4.style.borderCollapse = "collapse"
+							td1.style.backgroundColor = "#96D4D4"
+							td2.style.backgroundColor = "#96D4D4"
+							td3.style.backgroundColor = "#96D4D4"
+							td4.style.backgroundColor = "#96D4D4"
+							}
+							
+						document.getElementById("ProcessButton").disabled = false;
+						}
+					}
+			}
+			
+			FortexPortfolioButton.onclick = function(){
+				document.getElementById("accountMatch").style.display = "inline-block";
+				document.getElementById("FortexPortfolio").style.display = "none";
+			}
+										
+			let AM2PortfolioInput = document.getElementById("AM2PortfolioInput");	
+			let AMUKPortfolioInput = document.getElementById("AMUKPortfolioInput");
+			
+			AM2PortfolioInput.onchange = function(){
+				let existingAM2Table = document.getElementById("AM2Table");
+				if(existingAM2Table!==null){document.getElementById("FortexPortfolio").removeChild(existingAM2Table)}
+				
+				
+				if(AM2PortfolioInput.value === ""){
+					document.getElementById("FortexPortfolioButton").disabled = true;
+					document.getElementById("PortfolioSpan").style.visibility = "visible";
+				} else if(AM2PortfolioInput.value !==""&&AMUKPortfolioInput.value===""){
+					document.getElementById("PortfolioSpan").style.visibility = "hidden";
+					
+					const reader2 = new FileReader();
+					reader2.readAsText(AM2PortfolioInput.files[0]);
+					
+					reader2.onload = function(){
+					
+					let decodedArray = reader2.result.split(/\r?\n/)
+					let splittedColumnNames=decodedArray[0].split("\t")
+					
+					let AcctIndex = splittedColumnNames.indexOf("Acct")
+					let SymIndex = splittedColumnNames.indexOf("Sym")
+					let PositionIndex = splittedColumnNames.indexOf("Position")
+					
+					
+					
+					const AM2Table = document.createElement("table")
+					document.getElementById("FortexPortfolio").appendChild(AM2Table)
+					AM2Table.setAttribute("id","AM2Table")
+					AM2Table.style.border = "1px solid white"
+					AM2Table.style.display = "inline-block"
+					AM2Table.style.verticalAlign = "top"
+					AM2Table.style.margin = "20px"
+					
+					
+					const tr1 = document.createElement("tr")
+					const th = document.createElement("th")
+					th.style.border = "1px solid white"
+					th.style.borderCollapse = "collapse"
+					th.style.backgroundColor = "#96D4D4"
+					th.setAttribute("colspan","3")
+					
+					const tr2 = document.createElement("tr")
+					const th1 = document.createElement("th")
+					const th2 = document.createElement("th")
+					const th3 = document.createElement("th")
+					th1.style.border = "1px solid white"
+					th2.style.border = "1px solid white"
+					th3.style.border = "1px solid white"
+					th1.style.borderCollapse = "collapse"
+					th2.style.borderCollapse = "collapse"
+					th3.style.borderCollapse = "collapse"
+					th1.style.backgroundColor = "#96D4D4"
+					th2.style.backgroundColor = "#96D4D4"
+					th3.style.backgroundColor = "#96D4D4"
+					
+					th.innerHTML = "AM2 Fortex Portfolio"
+					th1.innerHTML = "Account"
+					th2.innerHTML = "Symbol"
+					th3.innerHTML = "Position"
+					
+					
+					AM2Table.appendChild(tr1)
+					AM2Table.querySelector("tr").appendChild(th)
+					AM2Table.appendChild(tr2)
+					AM2Table.querySelectorAll("tr")[1].appendChild(th1)
+					AM2Table.querySelectorAll("tr")[1].appendChild(th2)
+					AM2Table.querySelectorAll("tr")[1].appendChild(th3)
+					
+					for(i=1;i<decodedArray.length;i++){
+						let tr = document.createElement("tr");
+						AM2Table.appendChild(tr)
+						let td1 = document.createElement("td")
+						td1.innerHTML = decodedArray[i].split("\t")[AcctIndex]
+						let td2 = document.createElement("td")
+						td2.innerHTML = decodedArray[i].split("\t")[SymIndex]
+						let td3 = document.createElement("td")
+						td3.innerHTML = decodedArray[i].split("\t")[PositionIndex]
+						tr.appendChild(td1)
+						tr.appendChild(td2)
+						tr.appendChild(td3)
+							
+						td1.style.border = "1px solid white"
+						td2.style.border = "1px solid white"
+						td3.style.border = "1px solid white"
+						td1.style.borderCollapse = "collapse"
+						td2.style.borderCollapse = "collapse"
+						td3.style.borderCollapse = "collapse"
+						td1.style.backgroundColor = "#96D4D4"
+						td2.style.backgroundColor = "#96D4D4"
+						td3.style.backgroundColor = "#96D4D4"
+						
+						}
+					
+					}
+					
+					
+				} else if(AM2PortfolioInput.value!==""&&AMUKPortfolioInput.value!==""){
+					document.getElementById("FortexPortfolioButton").disabled = false;
+					document.getElementById("PortfolioSpan").style.visibility = "hidden";
+					
+					
+					const reader2 = new FileReader();
+					reader2.readAsText(AM2PortfolioInput.files[0]);
+					
+					reader2.onload = function(){
+					
+					let decodedArray = reader2.result.split(/\r?\n/)
+					let splittedColumnNames=decodedArray[0].split("\t")
+					
+					let AcctIndex = splittedColumnNames.indexOf("Acct")
+					let SymIndex = splittedColumnNames.indexOf("Sym")
+					let PositionIndex = splittedColumnNames.indexOf("Position")
+					
+					
+					
+					const AM2Table = document.createElement("table")
+					document.getElementById("FortexPortfolio").appendChild(AM2Table)
+					AM2Table.setAttribute("id","AM2Table")
+					AM2Table.style.border = "1px solid white"
+					AM2Table.style.display = "inline-block"
+					AM2Table.style.verticalAlign = "top"
+					AM2Table.style.margin = "20px"
+					
+					const tr1 = document.createElement("tr")
+					const th = document.createElement("th")
+					th.style.border = "1px solid white"
+					th.style.borderCollapse = "collapse"
+					th.style.backgroundColor = "#96D4D4"
+					th.setAttribute("colspan","3")
+					
+					const tr2 = document.createElement("tr")
+					const th1 = document.createElement("th")
+					const th2 = document.createElement("th")
+					const th3 = document.createElement("th")
+					th1.style.border = "1px solid white"
+					th2.style.border = "1px solid white"
+					th3.style.border = "1px solid white"
+					th1.style.borderCollapse = "collapse"
+					th2.style.borderCollapse = "collapse"
+					th3.style.borderCollapse = "collapse"
+					th1.style.backgroundColor = "#96D4D4"
+					th2.style.backgroundColor = "#96D4D4"
+					th3.style.backgroundColor = "#96D4D4"
+					
+					th.innerHTML = "AM2 Fortex Portfolio"
+					th1.innerHTML = "Account"
+					th2.innerHTML = "Symbol"
+					th3.innerHTML = "Position"
+					
+					
+					AM2Table.appendChild(tr1)
+					AM2Table.querySelector("tr").appendChild(th)
+					AM2Table.appendChild(tr2)
+					AM2Table.querySelectorAll("tr")[1].appendChild(th1)
+					AM2Table.querySelectorAll("tr")[1].appendChild(th2)
+					AM2Table.querySelectorAll("tr")[1].appendChild(th3)
+					
+					for(i=1;i<decodedArray.length;i++){
+						let tr = document.createElement("tr");
+						AM2Table.appendChild(tr)
+						let td1 = document.createElement("td")
+						td1.innerHTML = decodedArray[i].split("\t")[AcctIndex]
+						let td2 = document.createElement("td")
+						td2.innerHTML = decodedArray[i].split("\t")[SymIndex]
+						let td3 = document.createElement("td")
+						td3.innerHTML = decodedArray[i].split("\t")[PositionIndex]
+						tr.appendChild(td1)
+						tr.appendChild(td2)
+						tr.appendChild(td3)
+						
+						td1.style.border = "1px solid white"
+						td2.style.border = "1px solid white"
+						td3.style.border = "1px solid white"
+						td1.style.borderCollapse = "collapse"
+						td2.style.borderCollapse = "collapse"
+						td3.style.borderCollapse = "collapse"
+						td1.style.backgroundColor = "#96D4D4"
+						td2.style.backgroundColor = "#96D4D4"
+						td3.style.backgroundColor = "#96D4D4"
+						
+						}
+					
+					
+				}
+				
+				
+			}
+			}
+			
+			AMUKPortfolioInput.onchange = function(){
+				let existingAMUKTable = document.getElementById("AMUKTable");
+				if(existingAMUKTable!==null){document.getElementById("FortexPortfolio").removeChild(existingAMUKTable)}
+				
+				
+				if(AMUKPortfolioInput.value === ""){
+					document.getElementById("FortexPortfolioButton").disabled = true;
+					document.getElementById("PortfolioSpan2").style.visibility = "visible";
+				} else if(AMUKPortfolioInput.value !==""&&AM2PortfolioInput.value===""){
+					document.getElementById("PortfolioSpan2").style.visibility = "hidden";
+					
+					const reader2 = new FileReader();
+					reader2.readAsText(AMUKPortfolioInput.files[0]);
+					
+					reader2.onload = function(){
+					
+					let decodedArray = reader2.result.split(/\r?\n/)
+					let splittedColumnNames=decodedArray[0].split("\t")
+					
+					let AcctIndex = splittedColumnNames.indexOf("Acct")
+					let SymIndex = splittedColumnNames.indexOf("Sym")
+					let PositionIndex = splittedColumnNames.indexOf("Position")
+					
+					
+					
+					const AMUKTable = document.createElement("table")
+					document.getElementById("FortexPortfolio").appendChild(AMUKTable)
+					AMUKTable.setAttribute("id","AMUKTable")
+					AMUKTable.style.border = "1px solid white"
+					AMUKTable.style.display = "inline-block"
+					AMUKTable.style.verticalAlign = "top"
+					AMUKTable.style.margin = "20px"
+					
+					const tr1 = document.createElement("tr")
+					const th = document.createElement("th")
+					th.style.border = "1px solid white"
+					th.style.borderCollapse = "collapse"
+					th.style.backgroundColor = "#96D4D4"
+					th.setAttribute("colspan","3")
+					
+					const tr2 = document.createElement("tr")
+					const th1 = document.createElement("th")
+					const th2 = document.createElement("th")
+					const th3 = document.createElement("th")
+					th1.style.border = "1px solid white"
+					th2.style.border = "1px solid white"
+					th3.style.border = "1px solid white"
+					th1.style.borderCollapse = "collapse"
+					th2.style.borderCollapse = "collapse"
+					th3.style.borderCollapse = "collapse"
+					th1.style.backgroundColor = "#96D4D4"
+					th2.style.backgroundColor = "#96D4D4"
+					th3.style.backgroundColor = "#96D4D4"
+					
+					th.innerHTML = "AMUK Fortex Portfolio"
+					th1.innerHTML = "Account"
+					th2.innerHTML = "Symbol"
+					th3.innerHTML = "Position"
+					
+					
+					AMUKTable.appendChild(tr1)
+					AMUKTable.querySelector("tr").appendChild(th)
+					AMUKTable.appendChild(tr2)
+					AMUKTable.querySelectorAll("tr")[1].appendChild(th1)
+					AMUKTable.querySelectorAll("tr")[1].appendChild(th2)
+					AMUKTable.querySelectorAll("tr")[1].appendChild(th3)
+					
+					for(i=1;i<decodedArray.length;i++){
+						let tr = document.createElement("tr");
+						AMUKTable.appendChild(tr)
+						let td1 = document.createElement("td")
+						td1.innerHTML = decodedArray[i].split("\t")[AcctIndex]
+						let td2 = document.createElement("td")
+						td2.innerHTML = decodedArray[i].split("\t")[SymIndex]
+						let td3 = document.createElement("td")
+						td3.innerHTML = decodedArray[i].split("\t")[PositionIndex]
+						tr.appendChild(td1)
+						tr.appendChild(td2)
+						tr.appendChild(td3)
+							
+						td1.style.border = "1px solid white"
+						td2.style.border = "1px solid white"
+						td3.style.border = "1px solid white"
+						td1.style.borderCollapse = "collapse"
+						td2.style.borderCollapse = "collapse"
+						td3.style.borderCollapse = "collapse"
+						td1.style.backgroundColor = "#96D4D4"
+						td2.style.backgroundColor = "#96D4D4"
+						td3.style.backgroundColor = "#96D4D4"
+						}
+					
+					}
+					
+					
+				} else if(AMUKPortfolioInput.value!==""&&AM2PortfolioInput.value!==""){
+					document.getElementById("FortexPortfolioButton").disabled = false;
+					document.getElementById("PortfolioSpan2").style.visibility = "hidden";
+					
+					const reader2 = new FileReader();
+					reader2.readAsText(AMUKPortfolioInput.files[0]);
+					
+					reader2.onload = function(){
+					
+					let decodedArray = reader2.result.split(/\r?\n/)
+					let splittedColumnNames=decodedArray[0].split("\t")
+					
+					let AcctIndex = splittedColumnNames.indexOf("Acct")
+					let SymIndex = splittedColumnNames.indexOf("Sym")
+					let PositionIndex = splittedColumnNames.indexOf("Position")
+					
+					
+					
+					const AMUKTable = document.createElement("table")
+					document.getElementById("FortexPortfolio").appendChild(AMUKTable)
+					AMUKTable.setAttribute("id","AMUKTable")
+					AMUKTable.style.border = "1px solid white"
+					AMUKTable.style.display = "inline-block"
+					AMUKTable.style.verticalAlign = "top"
+					AMUKTable.style.margin = "20px"
+					
+					const tr1 = document.createElement("tr")
+					const th = document.createElement("th")
+					th.style.border = "1px solid white"
+					th.style.borderCollapse = "collapse"
+					th.style.backgroundColor = "#96D4D4"
+					th.setAttribute("colspan","3")
+					
+					const tr2 = document.createElement("tr")
+					const th1 = document.createElement("th")
+					const th2 = document.createElement("th")
+					const th3 = document.createElement("th")
+					th1.style.border = "1px solid white"
+					th2.style.border = "1px solid white"
+					th3.style.border = "1px solid white"
+					th1.style.borderCollapse = "collapse"
+					th2.style.borderCollapse = "collapse"
+					th3.style.borderCollapse = "collapse"
+					th1.style.backgroundColor = "#96D4D4"
+					th2.style.backgroundColor = "#96D4D4"
+					th3.style.backgroundColor = "#96D4D4"
+					
+					th.innerHTML = "AMUK Fortex Portfolio"
+					th1.innerHTML = "Account"
+					th2.innerHTML = "Symbol"
+					th3.innerHTML = "Position"
+					
+					
+					AMUKTable.appendChild(tr1)
+					AMUKTable.querySelector("tr").appendChild(th)
+					AMUKTable.appendChild(tr2)
+					AMUKTable.querySelectorAll("tr")[1].appendChild(th1)
+					AMUKTable.querySelectorAll("tr")[1].appendChild(th2)
+					AMUKTable.querySelectorAll("tr")[1].appendChild(th3)
+					
+					for(i=1;i<decodedArray.length;i++){
+						let tr = document.createElement("tr");
+						AMUKTable.appendChild(tr)
+						let td1 = document.createElement("td")
+						td1.innerHTML = decodedArray[i].split("\t")[AcctIndex]
+						let td2 = document.createElement("td")
+						td2.innerHTML = decodedArray[i].split("\t")[SymIndex]
+						let td3 = document.createElement("td")
+						td3.innerHTML = decodedArray[i].split("\t")[PositionIndex]
+						tr.appendChild(td1)
+						tr.appendChild(td2)
+						tr.appendChild(td3)
+						
+						td1.style.border = "1px solid white"
+						td2.style.border = "1px solid white"
+						td3.style.border = "1px solid white"
+						td1.style.borderCollapse = "collapse"
+						td2.style.borderCollapse = "collapse"
+						td3.style.borderCollapse = "collapse"
+						td1.style.backgroundColor = "#96D4D4"
+						td2.style.backgroundColor = "#96D4D4"
+						td3.style.backgroundColor = "#96D4D4"
+						
+						}
+				}
+				
+				
+			}
+			}
+			
+			//Process click!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+			ProcessButton.onclick = function(){
+				document.getElementById("accountMatch").style.display = "none";
+				
+				let mtSelectionCheckBoxes = document.getElementsByName("mtSelectionCheckBox")
+				let reconSelection
+				
+				if(mtSelectionCheckBoxes[0].checked===true&&mtSelectionCheckBoxes[1].checked===false&&mtSelectionCheckBoxes[2].checked===false) {reconSelection = "a"}
+				else if(mtSelectionCheckBoxes[0].checked===false&&mtSelectionCheckBoxes[1].checked===true&&mtSelectionCheckBoxes[2].checked===false){reconSelection = "b"}
+				else if(mtSelectionCheckBoxes[0].checked===false&&mtSelectionCheckBoxes[1].checked===false&&mtSelectionCheckBoxes[2].checked===true){reconSelection = "c"}
+				else if(mtSelectionCheckBoxes[0].checked===true&&mtSelectionCheckBoxes[1].checked===true&&mtSelectionCheckBoxes[2].checked===false){reconSelection = "ab"}
+				else if(mtSelectionCheckBoxes[0].checked===true&&mtSelectionCheckBoxes[1].checked===false&&mtSelectionCheckBoxes[2].checked===true){reconSelection = "ac"}
+				else if(mtSelectionCheckBoxes[0].checked===false&&mtSelectionCheckBoxes[1].checked===true&&mtSelectionCheckBoxes[2].checked===true){reconSelection = "bc"}
+				else if(mtSelectionCheckBoxes[0].checked===true&&mtSelectionCheckBoxes[1].checked===true&&mtSelectionCheckBoxes[2].checked===true){reconSelection = "abc"}
+				
+				console.log(reconSelection)
+				
+				const reader = new FileReader();
+				reader.readAsText(mappingInput.files[0]);
+				
+
+				
+				reader.onload = function(){
+					
+					
+					const portfolioReader = new FileReader();
+					portfolioReader.readAsText(AM2PortfolioInput.files[0]);
+					
+					
+					
+					
+					portfolioReader.onload = function(){
+						const portfolioReader2 = new FileReader();
+						portfolioReader2.readAsText(AMUKPortfolioInput.files[0]);
+					
+						portfolioReader2.onload = function(){
+						
+							let splittedAM2Portfolio = portfolioReader.result.split(/\r?\n/)
+							splittedAM2Portfolio = splittedAM2Portfolio.map(x => x.split("\t"))
+					
+							let AcctIndex = splittedAM2Portfolio[0].indexOf("Acct")
+							let SymIndex = splittedAM2Portfolio[0].indexOf("Sym")
+							let PositionIndex = splittedAM2Portfolio[0].indexOf("Position")
+						
+							let splittedAMUKPortfolio = portfolioReader2.result.split(/\r?\n/)
+							splittedAMUKPortfolio = splittedAMUKPortfolio.map(x => x.split("\t"))
+					
+							let AcctIndex2 = splittedAMUKPortfolio[0].indexOf("Acct")
+							let SymIndex2 = splittedAMUKPortfolio[0].indexOf("Sym")
+							let PositionIndex2 = splittedAMUKPortfolio[0].indexOf("Position")
+					
+							let decodedArray = reader.result.split(/\r?\n/)
+							decodedArray.pop();
+							
+								
+								
+							let mappingArray = decodedArray.map(x => x.split("\t"))
+							
+							//Group Data!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+							
+							
+							let groupData = []
+							if(reconSelection==="a"){
+								
+								let splittedAccountsTokyoTextArea = document.getElementById("AccountsTokyoTextArea").value.split(/\r?\n/)
+								splittedAccountsTokyoTextArea = splittedAccountsTokyoTextArea.map(x => x.split("\t"))
+								
+								
+								if(splittedAccountsTokyoTextArea[splittedAccountsTokyoTextArea.length-1].length === 1){splittedAccountsTokyoTextArea.pop()}
+								
+								
+								
+								for(i=0;i<splittedAccountsTokyoTextArea.length;i++){
+									if(!groupData.find(x => x.Name===splittedAccountsTokyoTextArea[i][2])){
+									const groupDataObject = {Name:splittedAccountsTokyoTextArea[i][2]}
+									groupDataObject.MtServer = "MT4 TK"
+									groupDataObject.Accounts = []
+									groupDataObject.totalGroupPositions = {}
+									groupData.push(groupDataObject)	
+								}
+								
+									let groupIndex = groupData.findIndex(x => x.Name===splittedAccountsTokyoTextArea[i][2])
+									groupData[groupIndex].Accounts.push(splittedAccountsTokyoTextArea[i][0])
+								}
+								
+								
+								}
+							else if(reconSelection==="b"){
+								
+								let splittedAccountsLondonTextArea = document.getElementById("AccountsLondonTextArea").value.split(/\r?\n/)
+								splittedAccountsLondonTextArea = splittedAccountsLondonTextArea.map(x => x.split("\t"))
+								if(splittedAccountsLondonTextArea[splittedAccountsLondonTextArea.length-1].length === 1){splittedAccountsLondonTextArea.pop()}
+								
+								
+								for(i=0;i<splittedAccountsLondonTextArea.length;i++){
+									if(!groupData.find(x => x.Name===splittedAccountsLondonTextArea[i][2])){
+									const groupDataObject = {Name:splittedAccountsLondonTextArea[i][2]}
+									groupDataObject.MtServer = "MT4 LD"
+									groupDataObject.Accounts = []
+									groupDataObject.totalGroupPositions = {}
+									groupData.push(groupDataObject)	
+								}
+								
+									let groupIndex = groupData.findIndex(x => x.Name===splittedAccountsLondonTextArea[i][2])
+									groupData[groupIndex].Accounts.push(splittedAccountsLondonTextArea[i][0])
+								}
+								
+								
+								}
+							else if(reconSelection==="c"){
+								
+								let splittedTradingAccountsTextArea = document.getElementById("TradingAccountsTextArea").value.split(/\r?\n/)
+								splittedTradingAccountsTextArea = splittedTradingAccountsTextArea.map(x => x.split(";"))
+								if(splittedTradingAccountsTextArea[splittedTradingAccountsTextArea.length-1].length === 1){splittedTradingAccountsTextArea.pop()}
+								
+								for(i=0;i<splittedTradingAccountsTextArea.length;i++){
+									if(!groupData.find(x => x.Name===splittedTradingAccountsTextArea[i][2])){
+									const groupDataObject = {Name:splittedTradingAccountsTextArea[i][2]}
+									groupDataObject.MtServer = "MT5"
+									groupDataObject.Accounts = []
+									groupDataObject.totalGroupPositions = {}
+									groupData.push(groupDataObject)	
+								}
+								
+									let groupIndex = groupData.findIndex(x => x.Name===splittedTradingAccountsTextArea[i][2])
+									groupData[groupIndex].Accounts.push(splittedTradingAccountsTextArea[i][0])
+								}
+								
+								
+								}
+							else if(reconSelection==="ab"){
+								
+								let splittedAccountsTokyoTextArea = document.getElementById("AccountsTokyoTextArea").value.split(/\r?\n/)
+								splittedAccountsTokyoTextArea = splittedAccountsTokyoTextArea.map(x => x.split("\t"))
+								if(splittedAccountsTokyoTextArea[splittedAccountsTokyoTextArea.length-1].length === 1){splittedAccountsTokyoTextArea.pop()}
+								
+								for(i=0;i<splittedAccountsTokyoTextArea.length;i++){
+									if(!groupData.find(x => x.Name===splittedAccountsTokyoTextArea[i][2])){
+									const groupDataObject = {Name:splittedAccountsTokyoTextArea[i][2]}
+									groupDataObject.MtServer = "MT4 TK"
+									groupDataObject.Accounts = []
+									groupDataObject.totalGroupPositions = {}
+									groupData.push(groupDataObject)	
+								}
+								
+									let groupIndex = groupData.findIndex(x => x.Name===splittedAccountsTokyoTextArea[i][2])
+									groupData[groupIndex].Accounts.push(splittedAccountsTokyoTextArea[i][0])
+								}
+								
+								let splittedAccountsLondonTextArea = document.getElementById("AccountsLondonTextArea").value.split(/\r?\n/)
+								splittedAccountsLondonTextArea = splittedAccountsLondonTextArea.map(x => x.split("\t"))
+								if(splittedAccountsLondonTextArea[splittedAccountsLondonTextArea.length-1].length === 1){splittedAccountsLondonTextArea.pop()}
+								
+								for(i=0;i<splittedAccountsLondonTextArea.length;i++){
+									if(!groupData.find(x => x.Name===splittedAccountsLondonTextArea[i][2])){
+									const groupDataObject = {Name:splittedAccountsLondonTextArea[i][2]}
+									groupDataObject.MtServer = "MT4 LD"
+									groupDataObject.Accounts = []
+									groupDataObject.totalGroupPositions = {}
+									groupData.push(groupDataObject)	
+								}
+								
+									let groupIndex = groupData.findIndex(x => x.Name===splittedAccountsLondonTextArea[i][2])
+									groupData[groupIndex].Accounts.push(splittedAccountsLondonTextArea[i][0])
+								}
+								
+								
+								
+								}
+							else if(reconSelection==="ac"){
+								let splittedAccountsTokyoTextArea = document.getElementById("AccountsTokyoTextArea").value.split(/\r?\n/)
+								splittedAccountsTokyoTextArea = splittedAccountsTokyoTextArea.map(x => x.split("\t"))
+								if(splittedAccountsTokyoTextArea[splittedAccountsTokyoTextArea.length-1].length === 1){splittedAccountsTokyoTextArea.pop()}
+								
+								for(i=0;i<splittedAccountsTokyoTextArea.length;i++){
+									if(!groupData.find(x => x.Name===splittedAccountsTokyoTextArea[i][2])){
+									const groupDataObject = {Name:splittedAccountsTokyoTextArea[i][2]}
+									groupDataObject.MtServer = "MT4 TK"
+									groupDataObject.Accounts = []
+									groupDataObject.totalGroupPositions = {}
+									groupData.push(groupDataObject)	
+								}
+								
+									let groupIndex = groupData.findIndex(x => x.Name===splittedAccountsTokyoTextArea[i][2])
+									groupData[groupIndex].Accounts.push(splittedAccountsTokyoTextArea[i][0])
+								}
+								
+								let splittedTradingAccountsTextArea = document.getElementById("TradingAccountsTextArea").value.split(/\r?\n/)
+								splittedTradingAccountsTextArea = splittedTradingAccountsTextArea.map(x => x.split(";"))
+								if(splittedTradingAccountsTextArea[splittedTradingAccountsTextArea.length-1].length === 1){splittedTradingAccountsTextArea.pop()}
+								
+								for(i=0;i<splittedTradingAccountsTextArea.length;i++){
+									if(!groupData.find(x => x.Name===splittedTradingAccountsTextArea[i][2])){
+									const groupDataObject = {Name:splittedTradingAccountsTextArea[i][2]}
+									groupDataObject.MtServer = "MT5"
+									groupDataObject.Accounts = []
+									groupDataObject.totalGroupPositions = {}
+									groupData.push(groupDataObject)	
+								}
+								
+									let groupIndex = groupData.findIndex(x => x.Name===splittedTradingAccountsTextArea[i][2])
+									groupData[groupIndex].Accounts.push(splittedTradingAccountsTextArea[i][0])
+								}
+								
+								
+								
+								}
+							else if(reconSelection==="bc"){
+								let splittedAccountsLondonTextArea = document.getElementById("AccountsLondonTextArea").value.split(/\r?\n/)
+								splittedAccountsLondonTextArea = splittedAccountsLondonTextArea.map(x => x.split("\t"))
+								if(splittedAccountsLondonTextArea[splittedAccountsLondonTextArea.length-1].length === 1){splittedAccountsLondonTextArea.pop()}
+								
+								for(i=0;i<splittedAccountsLondonTextArea.length;i++){
+									if(!groupData.find(x => x.Name===splittedAccountsLondonTextArea[i][2])){
+									const groupDataObject = {Name:splittedAccountsLondonTextArea[i][2]}
+									groupDataObject.MtServer = "MT4 LD"
+									groupDataObject.Accounts = []
+									groupDataObject.totalGroupPositions = {}
+									groupData.push(groupDataObject)	
+								}
+								
+									let groupIndex = groupData.findIndex(x => x.Name===splittedAccountsLondonTextArea[i][2])
+									groupData[groupIndex].Accounts.push(splittedAccountsLondonTextArea[i][0])
+								}
+								
+								let splittedTradingAccountsTextArea = document.getElementById("TradingAccountsTextArea").value.split(/\r?\n/)
+								splittedTradingAccountsTextArea = splittedTradingAccountsTextArea.map(x => x.split(";"))
+								if(splittedTradingAccountsTextArea[splittedTradingAccountsTextArea.length-1].length === 1){splittedTradingAccountsTextArea.pop()}
+								
+								for(i=0;i<splittedTradingAccountsTextArea.length;i++){
+									if(!groupData.find(x => x.Name===splittedTradingAccountsTextArea[i][2])){
+									const groupDataObject = {Name:splittedTradingAccountsTextArea[i][2]}
+									groupDataObject.MtServer = "MT5"
+									groupDataObject.Accounts = []
+									groupDataObject.totalGroupPositions = {}
+									groupData.push(groupDataObject)	
+								}
+								
+									let groupIndex = groupData.findIndex(x => x.Name===splittedTradingAccountsTextArea[i][2])
+									groupData[groupIndex].Accounts.push(splittedTradingAccountsTextArea[i][0])
+								}
+								
+								
+								
+								}
+							else if(reconSelection==="abc"){
+								let splittedAccountsTokyoTextArea = document.getElementById("AccountsTokyoTextArea").value.split(/\r?\n/)
+								splittedAccountsTokyoTextArea = splittedAccountsTokyoTextArea.map(x => x.split("\t"))
+								if(splittedAccountsTokyoTextArea[splittedAccountsTokyoTextArea.length-1].length === 1){splittedAccountsTokyoTextArea.pop()}
+								
+								for(i=0;i<splittedAccountsTokyoTextArea.length;i++){
+									if(!groupData.find(x => x.Name===splittedAccountsTokyoTextArea[i][2])){
+									const groupDataObject = {Name:splittedAccountsTokyoTextArea[i][2]}
+									groupDataObject.MtServer = "MT4 TK"
+									groupDataObject.Accounts = []
+									groupDataObject.totalGroupPositions = {}
+									groupData.push(groupDataObject)	
+								}
+								
+									let groupIndex = groupData.findIndex(x => x.Name===splittedAccountsTokyoTextArea[i][2])
+									groupData[groupIndex].Accounts.push(splittedAccountsTokyoTextArea[i][0])
+								}
+								
+								let splittedAccountsLondonTextArea = document.getElementById("AccountsLondonTextArea").value.split(/\r?\n/)
+								splittedAccountsLondonTextArea = splittedAccountsLondonTextArea.map(x => x.split("\t"))
+								if(splittedAccountsLondonTextArea[splittedAccountsLondonTextArea.length-1].length === 1){splittedAccountsLondonTextArea.pop()}
+								
+								for(i=0;i<splittedAccountsLondonTextArea.length;i++){
+									if(!groupData.find(x => x.Name===splittedAccountsLondonTextArea[i][2])){
+									const groupDataObject = {Name:splittedAccountsLondonTextArea[i][2]}
+									groupDataObject.MtServer = "MT4 LD"
+									groupDataObject.Accounts = []
+									groupDataObject.totalGroupPositions = {}
+									groupData.push(groupDataObject)	
+								}
+								
+									let groupIndex = groupData.findIndex(x => x.Name===splittedAccountsLondonTextArea[i][2])
+									groupData[groupIndex].Accounts.push(splittedAccountsLondonTextArea[i][0])
+								}
+								
+								let splittedTradingAccountsTextArea = document.getElementById("TradingAccountsTextArea").value.split(/\r?\n/)
+								splittedTradingAccountsTextArea = splittedTradingAccountsTextArea.map(x => x.split(";"))
+								if(splittedTradingAccountsTextArea[splittedTradingAccountsTextArea.length-1].length === 1){splittedTradingAccountsTextArea.pop()}
+								
+								for(i=0;i<splittedTradingAccountsTextArea.length;i++){
+									if(!groupData.find(x => x.Name===splittedTradingAccountsTextArea[i][2])){
+									const groupDataObject = {Name:splittedTradingAccountsTextArea[i][2]}
+									groupDataObject.MtServer = "MT5"
+									groupDataObject.Accounts = []
+									groupDataObject.totalGroupPositions = {}
+									groupData.push(groupDataObject)	
+								}
+								
+									let groupIndex = groupData.findIndex(x => x.Name===splittedTradingAccountsTextArea[i][2])
+									groupData[groupIndex].Accounts.push(splittedTradingAccountsTextArea[i][0])
+								}
+								
+								
+								
+							}
+							
+
+
+
+							//Orders!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+							if(reconSelection==="a"){
+								let splittedTokyoOrdersTextArea = document.getElementById("TokyoOrdersTextArea").value.split(/\r?\n/)
+								splittedTokyoOrdersTextArea = splittedTokyoOrdersTextArea.map(x => x.split("\t"))
+								if(splittedTokyoOrdersTextArea[splittedTokyoOrdersTextArea.length-1].length === 1){splittedTokyoOrdersTextArea.pop()}
+								
+								for(i=0;i<splittedTokyoOrdersTextArea.length;i++){
+									
+									let symbolName = splittedTokyoOrdersTextArea[i][4].split(".")[0]
+									let groupIndex = groupData.findIndex(x => x.Accounts.find(w => w === splittedTokyoOrdersTextArea[i][1]))
+									let type = splittedTokyoOrdersTextArea[i][3]
+									let netVolume;
+									if(type==="buy"){netVolume = parseFloat(splittedTokyoOrdersTextArea[i][5])}
+									else if(type==="sell"){netVolume = parseFloat(splittedTokyoOrdersTextArea[i][5]) * -1}
+									else {netVolume = 0}
+									
+									
+									if(groupData[groupIndex].totalGroupPositions[symbolName]){
+										groupData[groupIndex].totalGroupPositions[symbolName] = groupData[groupIndex].totalGroupPositions[symbolName] + netVolume} 
+									else {groupData[groupIndex].totalGroupPositions[symbolName] = netVolume}
+									
+								}
+									
+									
+									
+							}
+							else if(reconSelection==="b"){
+								let splittedLondonOrdersTextArea = document.getElementById("LondonOrdersTextArea").value.split(/\r?\n/)
+								splittedLondonOrdersTextArea = splittedLondonOrdersTextArea.map(x => x.split("\t"))
+								if(splittedLondonOrdersTextArea[splittedLondonOrdersTextArea.length-1].length === 1){splittedLondonOrdersTextArea.pop()}
+								
+								for(i=0;i<splittedLondonOrdersTextArea.length;i++){
+									
+									let symbolName = splittedLondonOrdersTextArea[i][4].split(".")[0]
+									let groupIndex = groupData.findIndex(x => x.Accounts.find(w => w === splittedLondonOrdersTextArea[i][1]))
+									let type = splittedLondonOrdersTextArea[i][3]
+									let netVolume;
+									if(type==="buy"){netVolume = parseFloat(splittedLondonOrdersTextArea[i][5])}
+									else if(type==="sell"){netVolume = parseFloat(splittedLondonOrdersTextArea[i][5]) * -1}
+									else {netVolume = 0}
+									
+									if(groupData[groupIndex].totalGroupPositions[symbolName]){
+										groupData[groupIndex].totalGroupPositions[symbolName] = groupData[groupIndex].totalGroupPositions[symbolName] + netVolume} 
+									else {groupData[groupIndex].totalGroupPositions[symbolName] = netVolume}
+									
+								}
+							}
+							else if(reconSelection==="c"){
+								let splittedPositionsTextArea = document.getElementById("PositionsTextArea").value.split(/\r?\n/)
+								splittedPositionsTextArea = splittedPositionsTextArea.map(x => x.split(";"))
+								if(splittedPositionsTextArea[splittedPositionsTextArea.length-1].length === 1){splittedPositionsTextArea.pop()}
+								
+								
+								for(i=0;i<splittedPositionsTextArea.length;i++){
+									
+									let symbolName = splittedPositionsTextArea[i][2].split(".")[0]
+									let groupIndex = groupData.findIndex(x => x.Accounts.find(w => w === splittedPositionsTextArea[i][0]))
+									let type = splittedPositionsTextArea[i][3]
+									let netVolume;
+									if(type==="buy"){netVolume = parseFloat(splittedPositionsTextArea[i][4])}
+									else if(type==="sell"){netVolume = parseFloat(splittedPositionsTextArea[i][4]) * -1}
+									else {netVolume = 0}
+									 
+									if(groupData[groupIndex].totalGroupPositions[symbolName]){
+										groupData[groupIndex].totalGroupPositions[symbolName] = groupData[groupIndex].totalGroupPositions[symbolName] + netVolume} 
+									else {groupData[groupIndex].totalGroupPositions[symbolName] = netVolume}
+									
+								}
+								
+							}
+							else if(reconSelection==="ab"){
+								let splittedTokyoOrdersTextArea = document.getElementById("TokyoOrdersTextArea").value.split(/\r?\n/)
+								splittedTokyoOrdersTextArea = splittedTokyoOrdersTextArea.map(x => x.split("\t"))
+								if(splittedTokyoOrdersTextArea[splittedTokyoOrdersTextArea.length-1].length === 1){splittedTokyoOrdersTextArea.pop()}
+								
+								for(i=0;i<splittedTokyoOrdersTextArea.length;i++){
+									
+									let symbolName = splittedTokyoOrdersTextArea[i][4].split(".")[0]
+									let groupIndex = groupData.findIndex(x => x.Accounts.find(w => w === splittedTokyoOrdersTextArea[i][1]))
+									let type = splittedTokyoOrdersTextArea[i][3]
+									let netVolume;
+									if(type==="buy"){netVolume = parseFloat(splittedTokyoOrdersTextArea[i][5])}
+									else if(type==="sell"){netVolume = parseFloat(splittedTokyoOrdersTextArea[i][5]) * -1}
+									else {netVolume = 0}
+									
+									if(groupData[groupIndex].totalGroupPositions[symbolName]){
+										groupData[groupIndex].totalGroupPositions[symbolName] = groupData[groupIndex].totalGroupPositions[symbolName] + netVolume} 
+									else {groupData[groupIndex].totalGroupPositions[symbolName] = netVolume}
+									
+								}
+									
+								let splittedLondonOrdersTextArea = document.getElementById("LondonOrdersTextArea").value.split(/\r?\n/)
+								splittedLondonOrdersTextArea = splittedLondonOrdersTextArea.map(x => x.split("\t"))
+								if(splittedLondonOrdersTextArea[splittedLondonOrdersTextArea.length-1].length === 1){splittedLondonOrdersTextArea.pop()}
+								
+								for(i=0;i<splittedLondonOrdersTextArea.length;i++){
+									
+									let symbolName = splittedLondonOrdersTextArea[i][4].split(".")[0]
+									let groupIndex = groupData.findIndex(x => x.Accounts.find(w => w === splittedLondonOrdersTextArea[i][1]))
+									let type = splittedLondonOrdersTextArea[i][3]
+									let netVolume;
+									if(type==="buy"){netVolume = parseFloat(splittedLondonOrdersTextArea[i][5])}
+									else if(type==="sell"){netVolume = parseFloat(splittedLondonOrdersTextArea[i][5]) * -1}
+									else {netVolume = 0}
+									
+									if(groupData[groupIndex].totalGroupPositions[symbolName]){
+										groupData[groupIndex].totalGroupPositions[symbolName] = groupData[groupIndex].totalGroupPositions[symbolName] + netVolume} 
+									else {groupData[groupIndex].totalGroupPositions[symbolName] = netVolume}
+									
+								}
+							}
+							else if(reconSelection==="ac"){
+								let splittedTokyoOrdersTextArea = document.getElementById("TokyoOrdersTextArea").value.split(/\r?\n/)
+								splittedTokyoOrdersTextArea = splittedTokyoOrdersTextArea.map(x => x.split("\t"))
+								if(splittedTokyoOrdersTextArea[splittedTokyoOrdersTextArea.length-1].length === 1){splittedTokyoOrdersTextArea.pop()}
+								
+								for(i=0;i<splittedTokyoOrdersTextArea.length;i++){
+									
+									let symbolName = splittedTokyoOrdersTextArea[i][4].split(".")[0]
+									let groupIndex = groupData.findIndex(x => x.Accounts.find(w => w === splittedTokyoOrdersTextArea[i][1]))
+									let type = splittedTokyoOrdersTextArea[i][3]
+									let netVolume;
+									if(type==="buy"){netVolume = parseFloat(splittedTokyoOrdersTextArea[i][5])}
+									else if(type==="sell"){netVolume = parseFloat(splittedTokyoOrdersTextArea[i][5]) * -1}
+									else {netVolume = 0}
+									
+									if(groupData[groupIndex].totalGroupPositions[symbolName]){
+										groupData[groupIndex].totalGroupPositions[symbolName] = groupData[groupIndex].totalGroupPositions[symbolName] + netVolume} 
+									else {groupData[groupIndex].totalGroupPositions[symbolName] = netVolume}
+									
+								}
+									
+								let splittedPositionsTextArea = document.getElementById("PositionsTextArea").value.split(/\r?\n/)
+								splittedPositionsTextArea = splittedPositionsTextArea.map(x => x.split(";"))
+								if(splittedPositionsTextArea[splittedPositionsTextArea.length-1].length === 1){splittedPositionsTextArea.pop()}
+								
+								for(i=0;i<splittedPositionsTextArea.length;i++){
+									
+									let symbolName = splittedPositionsTextArea[i][2].split(".")[0]
+									let groupIndex = groupData.findIndex(x => x.Accounts.find(w => w === splittedPositionsTextArea[i][0]))
+									let type = splittedPositionsTextArea[i][3]
+									let netVolume;
+									if(type==="buy"){netVolume = parseFloat(splittedPositionsTextArea[i][4])}
+									else if(type==="sell"){netVolume = parseFloat(splittedPositionsTextArea[i][4]) * -1}
+									else {netVolume = 0}
+									 
+									if(groupData[groupIndex].totalGroupPositions[symbolName]){
+										groupData[groupIndex].totalGroupPositions[symbolName] = groupData[groupIndex].totalGroupPositions[symbolName] + netVolume} 
+									else {groupData[groupIndex].totalGroupPositions[symbolName] = netVolume}
+									
+								}
+							}
+							else if(reconSelection==="bc"){
+								let splittedLondonOrdersTextArea = document.getElementById("LondonOrdersTextArea").value.split(/\r?\n/)
+								splittedLondonOrdersTextArea = splittedLondonOrdersTextArea.map(x => x.split("\t"))
+								if(splittedLondonOrdersTextArea[splittedLondonOrdersTextArea.length-1].length === 1){splittedLondonOrdersTextArea.pop()}
+								
+								for(i=0;i<splittedLondonOrdersTextArea.length;i++){
+									
+									let symbolName = splittedLondonOrdersTextArea[i][4].split(".")[0]
+									let groupIndex = groupData.findIndex(x => x.Accounts.find(w => w === splittedLondonOrdersTextArea[i][1]))
+									let type = splittedLondonOrdersTextArea[i][3]
+									let netVolume;
+									if(type==="buy"){netVolume = parseFloat(splittedLondonOrdersTextArea[i][5])}
+									else if(type==="sell"){netVolume = parseFloat(splittedLondonOrdersTextArea[i][5]) * -1}
+									else {netVolume = 0}
+									
+									if(groupData[groupIndex].totalGroupPositions[symbolName]){
+										groupData[groupIndex].totalGroupPositions[symbolName] = groupData[groupIndex].totalGroupPositions[symbolName] + netVolume} 
+									else {groupData[groupIndex].totalGroupPositions[symbolName] = netVolume}
+									
+								}
+									
+								let splittedPositionsTextArea = document.getElementById("PositionsTextArea").value.split(/\r?\n/)
+								splittedPositionsTextArea = splittedPositionsTextArea.map(x => x.split(";"))
+								if(splittedPositionsTextArea[splittedPositionsTextArea.length-1].length === 1){splittedPositionsTextArea.pop()}
+								
+								for(i=0;i<splittedPositionsTextArea.length;i++){
+									
+									let symbolName = splittedPositionsTextArea[i][2].split(".")[0]
+									let groupIndex = groupData.findIndex(x => x.Accounts.find(w => w === splittedPositionsTextArea[i][0]))
+									let type = splittedPositionsTextArea[i][3]
+									let netVolume;
+									if(type==="buy"){netVolume = parseFloat(splittedPositionsTextArea[i][4])}
+									else if(type==="sell"){netVolume = parseFloat(splittedPositionsTextArea[i][4]) * -1}
+									else {netVolume = 0}
+									 
+									if(groupData[groupIndex].totalGroupPositions[symbolName]){
+										groupData[groupIndex].totalGroupPositions[symbolName] = groupData[groupIndex].totalGroupPositions[symbolName] + netVolume} 
+									else {groupData[groupIndex].totalGroupPositions[symbolName] = netVolume}
+									
+								}
+							}
+							else if(reconSelection==="abc"){
+								let splittedTokyoOrdersTextArea = document.getElementById("TokyoOrdersTextArea").value.split(/\r?\n/)
+								splittedTokyoOrdersTextArea = splittedTokyoOrdersTextArea.map(x => x.split("\t"))
+								if(splittedTokyoOrdersTextArea[splittedTokyoOrdersTextArea.length-1].length === 1){splittedTokyoOrdersTextArea.pop()}
+								
+								for(i=0;i<splittedTokyoOrdersTextArea.length;i++){
+									
+									let symbolName = splittedTokyoOrdersTextArea[i][4].split(".")[0]
+									let groupIndex = groupData.findIndex(x => x.Accounts.find(w => w === splittedTokyoOrdersTextArea[i][1]))
+									let type = splittedTokyoOrdersTextArea[i][3]
+									let netVolume;
+									if(type==="buy"){netVolume = parseFloat(splittedTokyoOrdersTextArea[i][5])}
+									else if(type==="sell"){netVolume = parseFloat(splittedTokyoOrdersTextArea[i][5]) * -1}
+									else {netVolume = 0}
+									
+									if(groupData[groupIndex].totalGroupPositions[symbolName]){
+										groupData[groupIndex].totalGroupPositions[symbolName] = groupData[groupIndex].totalGroupPositions[symbolName] + netVolume} 
+									else {groupData[groupIndex].totalGroupPositions[symbolName] = netVolume}
+									
+								}
+									
+								let splittedLondonOrdersTextArea = document.getElementById("LondonOrdersTextArea").value.split(/\r?\n/)
+								splittedLondonOrdersTextArea = splittedLondonOrdersTextArea.map(x => x.split("\t"))
+								if(splittedLondonOrdersTextArea[splittedLondonOrdersTextArea.length-1].length === 1){splittedLondonOrdersTextArea.pop()}
+								
+								for(i=0;i<splittedLondonOrdersTextArea.length;i++){
+									
+									let symbolName = splittedLondonOrdersTextArea[i][4].split(".")[0]
+									let groupIndex = groupData.findIndex(x => x.Accounts.find(w => w === splittedLondonOrdersTextArea[i][1]))
+									let type = splittedLondonOrdersTextArea[i][3]
+									let netVolume;
+									if(type==="buy"){netVolume = parseFloat(splittedLondonOrdersTextArea[i][5])}
+									else if(type==="sell"){netVolume = parseFloat(splittedLondonOrdersTextArea[i][5]) * -1}
+									else {netVolume = 0}
+									
+									if(groupData[groupIndex].totalGroupPositions[symbolName]){
+										groupData[groupIndex].totalGroupPositions[symbolName] = groupData[groupIndex].totalGroupPositions[symbolName] + netVolume} 
+									else {groupData[groupIndex].totalGroupPositions[symbolName] = netVolume}
+									
+								}
+									
+								let splittedPositionsTextArea = document.getElementById("PositionsTextArea").value.split(/\r?\n/)
+								splittedPositionsTextArea = splittedPositionsTextArea.map(x => x.split(";"))
+								if(splittedPositionsTextArea[splittedPositionsTextArea.length-1].length === 1){splittedPositionsTextArea.pop()}
+								
+								for(i=0;i<splittedPositionsTextArea.length;i++){
+									
+									let symbolName = splittedPositionsTextArea[i][2].split(".")[0]
+									let groupIndex = groupData.findIndex(x => x.Accounts.find(w => w === splittedPositionsTextArea[i][0]))
+									let type = splittedPositionsTextArea[i][3]
+									let netVolume;
+									if(type==="buy"){netVolume = parseFloat(splittedPositionsTextArea[i][4])}
+									else if(type==="sell"){netVolume = parseFloat(splittedPositionsTextArea[i][4]) * -1}
+									else {netVolume = 0}
+									 
+									if(groupData[groupIndex].totalGroupPositions[symbolName]){
+										groupData[groupIndex].totalGroupPositions[symbolName] = groupData[groupIndex].totalGroupPositions[symbolName] + netVolume} 
+									else {groupData[groupIndex].totalGroupPositions[symbolName] = netVolume}
+									
+								}
+							}
+							
+							const contractSizes = {
+								audcad:100000,
+								audchf:100000,
+								audjpy:100000,
+								audnzd:100000,
+								cadchf:100000,
+								cadjpy:100000,
+								chfjpy:100000,
+								euraud:100000,
+								eurcad:100000,
+								eurgbp:100000,
+								eurchf:100000,
+								eurjpy:100000,
+								eurnzd:100000,
+								eurtry:100000,
+								gbpaud:100000,
+								gbpcad:100000,
+								gbpchf:100000,
+								gbpjpy:100000,
+								gbpnzd:100000,
+								nzdcad:100000,
+								nzdchf:100000,
+								nzdjpy:100000,
+								usdtry:100000,
+								audsgd:100000,
+								chfsgd:100000,
+								eurnok:100000,
+								eurpln:100000,
+								eursek:100000,
+								eursgd:100000,
+								eurzar:100000,
+								gbpnok:100000,
+								gbpsek:100000,
+								gbpsgd:100000,
+								nokjpy:100000,
+								noksek:100000,
+								sekjpy:100000,
+								sgdjpy:100000,
+								usdcnh:100000,
+								usdhkd:100000,
+								usdnok:100000,
+								usdpln:100000,
+								usdsek:100000,
+								usdsgd:100000,
+								usdzar:100000,
+								zarjpy:100000,
+								audusd:100000,
+								eurusd:100000,
+								gbpusd:100000,
+								nzdusd:100000,
+								usdcad:100000,
+								usdchf:100000,
+								usdjpy:100000,
+								xagusd:5000,
+								xauusd:100,
+								xbrusd:1000,
+								xngusd:10000,
+								xtiusd:1000,
+								bchusd:1,
+								eosusd:10000,
+								ethusd:1,
+								ltcusd:100,
+								xbtusd:1,
+								xlmusd:10000,
+								hk50:1,
+								jpn225:10,
+								nas100:1,
+								uk100:1,
+								ukoil:10,
+								us30:1,
+								ger30:1,
+								us500:1,
+								usoil:10,
+								ger40:1,
+								eustx50:1,
+								spa35:1,
+								swi20:1,
+								usbkt:1,
+								chh:1,
+								cha50:1,
+								sing:1,
+								ukoil:10,
+								litusd:1,
+								bccusd:1,
+								etcusd:1,
+								btcusd:1,
+								ripusd:1,
+								brent:1000,
+								natgas:10000,
+								wti:1000
+								}
+							
+							
+							console.log(groupData)
+							console.log("filtera giriyor")
+							groupData = groupData.filter(x => Object.keys(x.totalGroupPositions).length !== 0)
+							
+							
+							
+							for(i=0;i<groupData.length;i++){
+								for(a=0;a<Object.keys(groupData[i].totalGroupPositions).length;a++){
+
+									groupData[i].totalGroupPositions[Object.keys(groupData[i].totalGroupPositions)[a]] = Math.round(groupData[i].totalGroupPositions[Object.keys(groupData[i].totalGroupPositions)[a]] * contractSizes[Object.keys(groupData[i].totalGroupPositions)[a]] * 100)/100 
+								
+								}
+							}
+							
+							console.log(groupData)
+							
+							//Account Objects!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+							let accountObjects = []
+							for(i=0;i<mappingArray.length;i++){
+								if(!accountObjects.find(x => x.Name===mappingArray[i][3])){
+									const accountObject = {Name:mappingArray[i][3]}
+									accountObject.MtServer = mappingArray[i][0]
+									accountObject.FortexServer = mappingArray[i][2]
+									accountObject.AccountType = mappingArray[i][4]
+									accountObjects.push(accountObject)
+								}
+								
+								let accountIndex = accountObjects.findIndex(x => x.Name===mappingArray[i][3])
+								if(!accountObjects[accountIndex].Group) {accountObjects[accountIndex].Group = []}
+								if(!accountObjects[accountIndex].Group.includes(mappingArray[i][1]))
+									{accountObjects[accountIndex].Group.push(mappingArray[i][1])}
+								
+								if(!accountObjects[accountIndex].Positions) {accountObjects[accountIndex].Positions = {}}
+								if(!accountObjects[accountIndex].MtPositions) {accountObjects[accountIndex].MtPositions = {}}
+							}
+							
+							for(i=1;i<splittedAM2Portfolio.length;i++){
+								if(accountObjects.find(x=>x.Name===splittedAM2Portfolio[i][AcctIndex])){
+									let accountIndex = accountObjects.findIndex(x => x.Name===splittedAM2Portfolio[i][AcctIndex])
+									accountObjects[accountIndex].Positions[splittedAM2Portfolio[i][SymIndex].replace("/","")] = parseFloat(splittedAM2Portfolio[i][PositionIndex].replace(",","").replace(",",""))
+								}
+								
+								else if(splittedAM2Portfolio[i][AcctIndex].includes("AMIE")){
+									if(!accountObjects.find(x => x.Name===splittedAM2Portfolio[i][AcctIndex])){
+										const accountObject = {Name:splittedAM2Portfolio[i][AcctIndex]}
+										accountObject.MtServer = ""
+										accountObject.FortexServer = "AM2"
+										accountObject.AccountType = "Minibus"
+										accountObject.MtPositions = {}
+										accountObjects.push(accountObject)
+									}
+									
+									let accountIndex = accountObjects.findIndex(x => x.Name===splittedAM2Portfolio[i][AcctIndex])
+									if(!accountObjects[accountIndex].Group) {accountObjects[accountIndex].Group = []}
+									if(!accountObjects[accountIndex].Positions) {accountObjects[accountIndex].Positions = {}}
+									accountObjects[accountIndex].Positions[splittedAM2Portfolio[i][SymIndex].replace("/","")] = parseFloat(splittedAM2Portfolio[i][PositionIndex].replace(",","").replace(",",""))
+								}
+								
+								
+								
+							}
+							
+							for(i=1;i<splittedAMUKPortfolio.length;i++){
+								if(accountObjects.find(x=>x.Name===splittedAMUKPortfolio[i][AcctIndex2])){
+									let accountIndex = accountObjects.findIndex(x => x.Name===splittedAMUKPortfolio[i][AcctIndex2])
+									accountObjects[accountIndex].Positions[splittedAMUKPortfolio[i][SymIndex2].replace("/","")] = parseFloat(splittedAMUKPortfolio[i][PositionIndex2].replace(",","").replace(",",""))
+								}
+								
+								
+								else if(splittedAMUKPortfolio[i][AcctIndex2].includes("AMIE")){
+									if(!accountObjects.find(x => x.Name===splittedAMUKPortfolio[i][AcctIndex])){
+										const accountObject = {Name:splittedAMUKPortfolio[i][AcctIndex2]}
+										accountObject.MtServer = ""
+										accountObject.FortexServer = "AMUK"
+										accountObject.AccountType = "Minibus"
+										accountObject.MtPositions = {}
+										accountObjects.push(accountObject)
+									}
+									
+									let accountIndex = accountObjects.findIndex(x => x.Name===splittedAMUKPortfolio[i][AcctIndex])
+									if(!accountObjects[accountIndex].Group) {accountObjects[accountIndex].Group = []}
+									if(!accountObjects[accountIndex].Positions) {accountObjects[accountIndex].Positions = {}}
+									accountObjects[accountIndex].Positions[splittedAMUKPortfolio[i][SymIndex].replace("/","")] = parseFloat(splittedAMUKPortfolio[i][PositionIndex2].replace(",","").replace(",",""))
+								}
+							}
+							
+							
+							for(i=0;i<accountObjects.length;i++){
+								if(accountObjects[i].Name.includes("AMIE_")){
+									let AMIE_Number = accountObjects[i].Name.replace("AMIE_","");
+									let groupDataIndex = groupData.findIndex(x => x.Accounts.find(y => y === AMIE_Number))
+									if(groupDataIndex>-1){
+										accountObjects[i].MtServer = groupData[groupDataIndex].MtServer
+										accountObjects[i].Group.push(groupData[groupDataIndex].Name)
+										}
+								}
+							}
+							
+							
+							accountObjects = accountObjects.filter(x => x.MtServer !== "")
+							
+							
+							for(i=0;i<accountObjects.length;i++){
+								if(!accountObjects[i].Name.includes("AMIE_")){
+									for(a=0;a<accountObjects[i].Group.length;a++){
+										let groupDataIndex = groupData.findIndex(x => x.Name === accountObjects[i].Group[a])
+										if(groupDataIndex>-1){
+											for(b=0;b<Object.keys(groupData[groupDataIndex].totalGroupPositions).length;b++){
+												if(accountObjects[i].MtPositions[Object.keys(groupData[groupDataIndex].totalGroupPositions)[b]])
+													{accountObjects[i].MtPositions[Object.keys(groupData[groupDataIndex].totalGroupPositions)[b]] = accountObjects[i].MtPositions[Object.keys(groupData[groupDataIndex].totalGroupPositions)[b]] + groupData[groupDataIndex].totalGroupPositions[Object.keys(groupData[groupDataIndex].totalGroupPositions)[b]]
+													}
+												else {accountObjects[i].MtPositions[Object.keys(groupData[groupDataIndex].totalGroupPositions)[b]] = groupData[groupDataIndex].totalGroupPositions[Object.keys(groupData[groupDataIndex].totalGroupPositions)[b]]}
+											}
+											
+											
+											
+											
+											
+											
+										}
+										
+									}
+								
+								
+								}
+								
+								//if(accountObjects[i].Name.includes("AMIE_")){
+									
+								
+								
+								//}
+							}
+							console.log(accountObjects)
+							console.log("accountObject filtera giriyor")
+							accountObjects = accountObjects.filter(x => Object.keys(x.Positions).length !== 0||Object.keys(x.MtPositions).length !== 0)
+							console.log(accountObjects)
+							
+							console.log("ikinci filtera giriyor")
+							
+							if(reconSelection==="a"){console.log(reconSelection);accountObjects=accountObjects.filter(x=> x.MtServer === "MT4 TK")}
+							else if(reconSelection==="b"){console.log(reconSelection);accountObjects=accountObjects.filter(x=> x.MtServer === "MT4 LD")}
+							else if(reconSelection==="c"){console.log(reconSelection);accountObjects=accountObjects.filter(x=> x.MtServer === "MT5")}
+							else if(reconSelection==="ab"){console.log(reconSelection);accountObjects=accountObjects.filter(x=> x.MtServer === "MT4 TK"||x.MtServer === "MT4 LD")}
+							else if(reconSelection==="ac"){console.log(reconSelection);accountObjects=accountObjects.filter(x=> x.MtServer === "MT4 TK"||x.MtServer === "MT5")}
+							else if(reconSelection==="bc"){console.log(reconSelection);accountObjects=accountObjects.filter(x=> x.MtServer === "MT4 LD"||x.MtServer === "MT5")}
+							else if(reconSelection==="abc"){console.log(reconSelection);accountObjects=accountObjects.filter(x=> x.MtServer === "MT4 TK"||x.MtServer === "MT4 LD"||x.MtServer === "MT5")}
+							
+							console.log(accountObjects)
+							console.log("AMIE filtera giriyor")
+							accountObjects=accountObjects.filter(x=> x.AccountType === "Omnibus")
+							
+							
+							
+							let finalObject = {}
+							
+							for(i=0;i<accountObjects.length;i++){
+								let positionsArray = Object.keys(accountObjects[i].Positions)
+								let MtPositionsArray = Object.keys(accountObjects[i].MtPositions)
+								
+								for(a=0;a<positionsArray.length;a++){
+								let positionVolume = accountObjects[i].Positions[positionsArray[a]]
+								let MtPositionsVolume = accountObjects[i].MtPositions[positionsArray[a].toLowerCase()]
+									if((positionVolume !== MtPositionsVolume)&&!((!positionVolume&&MtPositionsVolume===0)||(positionVolume===0&&!MtPositionsVolume))) {
+										if(!finalObject[accountObjects[i].Name]){finalObject[accountObjects[i].Name] = {}}
+										finalObject[accountObjects[i].Name][positionsArray[a]] = {MetaTrader:accountObjects[i].MtPositions[positionsArray[a].toLowerCase()],Fortex:accountObjects[i].Positions[positionsArray[a]]}
+									}
+								}
+								
+								
+								for(a=0;a<MtPositionsArray.length;a++){
+								let MtPositionsVolume = accountObjects[i].MtPositions[MtPositionsArray[a]]
+								let positionVolume = accountObjects[i].Positions[MtPositionsArray[a].toUpperCase()]
+								
+									if((MtPositionsVolume !== positionVolume)&&!((!positionVolume&&MtPositionsVolume===0)||(positionVolume===0&&!MtPositionsVolume))) {
+										if(!finalObject[accountObjects[i].Name]){finalObject[accountObjects[i].Name] = {}}
+										if(!finalObject[accountObjects[i].Name][MtPositionsArray[a].toUpperCase()]) {
+											finalObject[accountObjects[i].Name][MtPositionsArray[a].toUpperCase()] = {MetaTrader:accountObjects[i].MtPositions[MtPositionsArray[a]],Fortex:accountObjects[i].Positions[MtPositionsArray[a].toUpperCase()]}
+										}
+										
+									}
+								}
+							}
+							
+							console.log(finalObject)
+							
+							
+							
+							document.getElementById("finalDiv").style.display = "inline-block"
+							
+							
+							for(i=0;i<Object.keys(finalObject).length;i++){
+								let tr = document.createElement("tr")
+								let td = document.createElement("td")
+								let td2 = document.createElement("td")
+								let innerTable = document.createElement("table")
+								innerTable.style.width = "100%"
+								td.innerHTML = Object.keys(finalObject)[i]
+								
+								document.getElementById("finalTable").appendChild(tr)
+								tr.appendChild(td)
+								tr.appendChild(td2)
+								td2.appendChild(innerTable)
+								
+								
+								for(a=0;a<Object.keys(finalObject[Object.keys(finalObject)[i]]).length;a++){
+									
+									let tr1 = document.createElement("tr")
+									let th1 = document.createElement("th")
+									th1.innerHTML = Object.keys(finalObject[Object.keys(finalObject)[i]])[a]
+									innerTable.appendChild(tr1)
+									tr1.appendChild(th1)
+									
+									let tr2 = document.createElement("tr")
+									let tr3 = document.createElement("tr")
+									let tdinner1 = document.createElement("td")
+									let tdinner2 = document.createElement("td")
+									tdinner1.innerHTML = "MetaTrader: " + finalObject[Object.keys(finalObject)[i]][Object.keys(finalObject[Object.keys(finalObject)[i]])[a]].MetaTrader
+									tdinner2.innerHTML = "Fortex: " + finalObject[Object.keys(finalObject)[i]][Object.keys(finalObject[Object.keys(finalObject)[i]])[a]].Fortex
+									innerTable.appendChild(tr2)
+									tr2.appendChild(tdinner1)
+									innerTable.appendChild(tr3)
+									tr3.appendChild(tdinner2)
+								}
+								
+							}
+							
+							
+							
+						}
+					}
+				
+				
+				}
+			}
+			
+		</script>
+		
+	</body>
+</html>
